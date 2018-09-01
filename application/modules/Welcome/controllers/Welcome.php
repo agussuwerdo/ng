@@ -33,8 +33,31 @@ class Welcome extends MX_Controller {
 		// $whr['name'] = 'TRIAL1';
 		$whr['description'] = 'gass';
 		$this->store_model->set_where($whr);
-		// $str = $this->store_model->get($whr);
+		$str1 = $this->store_model->get($whr);
+		// print_r($str1);
 		$str = $this->store_model->get_list();
-		print_r($str);
+		// print_r($str);
+		$data['storecode'] = '1XS';
+		$data['name'] = 'TRIAL1';
+		$data['description'] = 'TRI Description TRI DescriptionTRI DescriptionTRI DescriptionTRI DescriptionTRI DescriptionTRI DescriptionTRI Description';
+		$save = $this->store_model->save($str1);
+		// print_r($this->store_model->message);
+		// print_r($save['message']);
+		print_r($save);
+		$save = $this->store_model->save($data);
+		// print_r($save['message']);
+		print_r($save);
+		
+		for($i=0;$i<100;$i++)
+		{
+			$data['storecode'] = $i.'STR';
+			$data['name'] = 'TOKO '.$i;
+			$data['description'] = 'TOKO nomor ke '.$i;
+			$save = $this->store_model->save($data);
+			echo $save['result'];
+			echo '<hr>';
+			echo $save['message'];
+			echo '<hr>';
+		}
 	}
 }

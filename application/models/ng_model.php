@@ -114,12 +114,14 @@ class Ng_model extends CI_Model
 		if ( $query->num_rows() == 1)
 		{
             $data = $query->row_array();
+			$data['field_info'] =  $this->get_field_info();
 			$query->free_result();
 			
 		}else
 		{
 			$data = $this->feed_blank();
-			$data['num_rows'] = $query->num_rows();
+			// $data['num_rows'] = $query->num_rows();
+			// $data['field_info'] =  $this->get_field_info();
 		}
 		// echo $this->db->last_query();
         return $data;
@@ -145,6 +147,9 @@ class Ng_model extends CI_Model
 		
 		// echo $this->db->last_query();
 		// exit;
+		//  = array('1'=>'2');
+		// print_r($query->result_array());
+		$query->field_info = $this->get_field_info();
         if($query->num_rows()>0)
 		{
 			return $query;
@@ -152,10 +157,89 @@ class Ng_model extends CI_Model
 		}else
 		{
 			$query->free_result();
+			$query = $this->feed_blank();
             return $query;
         }
 	}
 	
+	function save($data,$act=null)
+	{
+		$msg = array();
+		$msg['result'] 	= 'success';
+		$msg['message'] = '';
+		$msg['data'] 	= $data;
+		$return = 0;
+		$action = '';
+		$data = $this->clean_data($data);
+		$data = $this->cut_oversize_data($data);
+		$msg['message'] = $this->message;
+		if(isset($this->pk))
+		{
+			foreach($this->pk as $key=>$value)
+			{
+				$where[$this->pk[$key]] = $data[$this->pk[$key]];
+			}
+			$msg['data'] 	= $where;
+		}
+		$this->db->select($this->pk[0]);
+		if (isset($this->pk)){
+			if($data[$this->pk[$key]]=='')
+			{
+				$msg['result'] 	= 'failed';
+				$msg['message'] = 'DATA EMPTY';
+				return $msg;
+			}
+			$this->db->where($where);
+			$msg['data'] 	= $where;
+		}
+		$query = $this->db->get($this->schema.'.'.$this->table);
+		//
+		$num_rows = $query->num_rows();
+		if($num_rows==0)
+		{
+			$msg['message'] . 'Insert Sukses';
+			$action = 'New Data';
+			// insert new row
+			$new = $this->db->insert($this->schema.'.'.$this->table, $data);		
+			$return = $new;
+			
+		}elseif($num_rows==1)
+		{
+			$msg['message'] .= 'Update Sukses';
+			$this->db->where($where);
+			$value_old = $this->db->get($this->schema.'.'.$this->table);
+			$value_old = $value_old->row_array();
+			$action = 'Edit Data';
+			// update data
+			$this->db->where($where);		
+			$update = $this->db->update($this->schema.'.'.$this->table,$data);
+			
+			if(isset($this->pk))
+			{
+				foreach($this->pk as $key=>$value)
+				{
+					$return .= $data[$this->pk[$key]];
+				}
+			}
+			
+		}elseif($num_rows>1)
+		{
+			$return = false;
+			$msg['result'] 	= 'failed';
+			$msg['message']  .= 'Ditemukan data di server lebih dari satu [ '.$num_rows.' rows]';
+			
+			if(isset($this->pk))
+			{
+				foreach($this->pk as $key=>$value)
+				{
+					$msg .= chr(13).$data[$this->pk[$key]];
+				}
+			}
+			
+			return $msg;
+		}
+		return $msg;
+	}
 	
 	function clean_data($value, $table = FALSE)
 	{
@@ -187,6 +271,51 @@ class Ng_model extends CI_Model
 			$cleaned_data = array_intersect_key($data, $fields);
 		}
 		return $cleaned_data;
+	}
+	
+	function cut_oversize_data($data)
+	{
+		$new_data = array();
+		$msg = '';
+		$qry = '';
+		foreach($data as $key=>$value)
+		{
+			$qry = $this->db->query('SELECT COALESCE(character_maximum_length,0) lth,column_name
+			FROM INFORMATION_SCHEMA. COLUMNS WHERE
+			table_schema = '.$this->db->escape($this->schema).'
+			AND TABLE_NAME = '.$this->db->escape($this->table).'
+			AND COLUMN_NAME = '.$this->db->escape($key).'');
+			$qry = $qry->row_array();
+			$max_length = $qry['lth'];
+			if(strlen($value)>$max_length)
+			{
+				$new_data[$key] = substr($value,0,$max_length);
+				$msg .= 'Field : "'.$qry['column_name'].'" terpotong karena terlalu panjang. '.chr(13);
+			}else{
+				$new_data[$key] = $value;
+			}
+		}
+		$this->message = $msg ;
+		return $new_data;
+	}
+	
+	function get_field_info()
+	{
+		$new_data = array();
+		$datafield = $this->db->query('SELECT COALESCE(character_maximum_length,0) length,column_name,data_type,is_nullable
+		FROM INFORMATION_SCHEMA. COLUMNS WHERE
+		table_schema = '.$this->db->escape($this->schema).'
+		AND TABLE_NAME = '.$this->db->escape($this->table).'');
+		foreach($datafield->result_array() as $key=>$row)
+		{
+			foreach($row as $key2=>$value)
+			{
+				$new_data[$row['column_name']]['length'] = $row['length'];
+				$new_data[$row['column_name']]['data_type'] = $row['data_type'];
+				$new_data[$row['column_name']]['is_nullable'] = $row['is_nullable'];
+			}
+		}
+		return $new_data;
 	}
 	
 	function feed_blank()
