@@ -20,6 +20,21 @@ class Welcome extends MX_Controller {
 	 */
 	public function index()
 	{
+		$this->load->model('my_models');
+		$this->load->model('store_model');
 		$this->load->view('welcome_message');
+		
+		$user = $this->my_models->get_user(1);
+		
+		// print_r($user);
+		// $str = $this->store_model->get(array('storecode'=>'1X','name'=>'TRIAL1'));
+		$whr = array();
+		// $whr['storecode'] = '1X';
+		// $whr['name'] = 'TRIAL1';
+		$whr['description'] = 'gass';
+		$this->store_model->set_where($whr);
+		// $str = $this->store_model->get($whr);
+		$str = $this->store_model->get_list();
+		print_r($str);
 	}
 }
