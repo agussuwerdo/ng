@@ -22,8 +22,17 @@ class Welcome extends MX_Controller {
 	{
 		$this->load->model('my_models');
 		$this->load->model('store_model');
-		$this->load->view('welcome_message');
+		$this->load->view('dashboard');
+		// $this->load->view('welcome_message');
 		
+		
+		// echo FCPATH;
+		// echo BASEPATH ;
+		// echo APPPATH   ;
+		
+		/*
+		
+		// die;
 		$user = $this->my_models->get_user(1);
 		
 		// print_r($user);
@@ -58,6 +67,6 @@ class Welcome extends MX_Controller {
 			echo '<hr>';
 			echo $save['message'];
 			echo '<hr>';
-		}
+		}*/
 	}
 }
